@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block title %}Tasks{% endblock %}
+
+{% block content %}
+    <h1>Tasks for Project: {{ project_description }}</h1>
+
+    <ul id="tasks-list">
+        {% for task in tasks %}
+            <li>
+                {{ task['name'] }}
+                <button onclick="markTaskCompleted('{{ task.id }}')">Mark as Completed</button>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}
