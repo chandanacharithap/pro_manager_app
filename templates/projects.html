@@ -2,264 +2,219 @@
 {% block title %}Projects{% endblock %}
 
 {% block content %}
-    <h1 class="page-title">Project Management Dashboard</h1>
+<head> <link rel="stylesheet" href="{{ url_for('static', filename='projects.css') }}">
+</head>
+<h1 class="page-title">Project Management Dashboard</h1>
 
-    <div class="project-actions">
-        <button class="btn primary-btn" onclick="fetchProjects()">Load Projects</button>
-        <div class="input-group">
-            <input type="text" id="project_id" name="project_id" placeholder="Enter Project ID" required>
-            <button class="btn secondary-btn" onclick="fetchProjectDetails()">Get Project Details</button>
-        </div>
+
+<!-- 🔹 Load Existing Projects -->
+<div class="project-actions">
+    <button class="btn primary-btn" onclick="fetchProjects()">Load Projects</button>
+    <div class="input-group">
+        <input type="text" id="project_id" name="project_id" placeholder="Enter Project ID" required>
+        <button class="btn secondary-btn" onclick="fetchProjectDetails()">Get Project Details</button>
     </div>
+</div>
 
-    <div id="loading" class="hidden">Loading...</div>
+<div id="loading" class="hidden">Loading...</div>
 
-    <!-- Employees Section -->
-    <div class="section">
-        <h2>Employees Assigned</h2>
-        <ul id="employee-list" class="card-list"></ul>
+<!-- 🔹 New Project Form -->
+<div class="section">
+    <h2>Add New Project</h2>
+    <div class="input-group">
+        <input type="text" id="new_project_id" placeholder="Enter New Project ID" required>
+        <input type="text" id="new_project_description" placeholder="Enter Project Description" required>
+        <button class="btn success-btn" onclick="addNewProject()">Add Project</button>
     </div>
+</div>
 
-    <!-- Tasks Section -->
-    <div class="section">
-        <h2>Project Tasks</h2>
-        <div id="task-list"></div>
-    </div>
+<!-- 🔹 Employees Section -->
+<div class="section">
+    <h2>Employees Assigned</h2>
+    <ul id="employee-list" class="card-list"></ul>
+</div>
 
-    <!-- Projects Section -->
-    <div class="section">
-        <h2>Existing Projects</h2>
-        <ul id="project-list" class="card-list"></ul>
-    </div>
+<!-- 🔹 Tasks Section -->
+<div class="section">
+    <h2>Project Tasks</h2>
+    <div id="task-list"></div>
+</div>
 
-    <style>
-        /* General Styling */
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f7fc;
-            margin: 0;
-            padding: 20px;
-        }
+<!-- 🔹 Projects Section -->
+<div class="section">
+    <h2>Existing Projects</h2>
+    <ul id="project-list" class="card-list"></ul>
+</div>
 
-        h1, h2 {
-            text-align: center;
-            color: #007bff;
-        }
+<!-- 🔹 Assignment Logs Section -->
+<div class="section">
+    <h2>Assignment Logs</h2>
+    <label for="employee-dropdown">Filter by Employee ID:</label>
+    <select id="employee-dropdown" onchange="fetchLogsForEmployee()">
+        <option value="">Select Employee</option>
+    </select>
+    <ul id="log-list" class="card-list"></ul>
+</div>
 
-        .section {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-        }
+<script>
+    // ✅ Load Employee IDs for Logs
+    function fetchEmployeesForLogs() {
+        fetch('/api/employees')
+            .then(response => response.json())
+            .then(data => {
+                const employeeDropdown = document.getElementById('employee-dropdown');
+                employeeDropdown.innerHTML = '<option value="">Select Employee</option>';
 
-        .input-group {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        .btn {
-            padding: 10px 15px;
-            border: none;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s ease;
-        }
-
-        .primary-btn {
-            background-color: #007bff;
-        }
-
-        .primary-btn:hover {
-            background-color: #0056b3;
-        }
-
-        .secondary-btn {
-            background-color: #28a745;
-        }
-
-        .secondary-btn:hover {
-            background-color: #1e7e34;
-        }
-
-        .card-list {
-            list-style: none;
-            padding: 0;
-        }
-
-        .card-list li {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 5px;
-            margin-bottom: 8px;
-            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .task-container {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .subtask-container {
-            margin-left: 20px;
-            padding: 10px;
-            background: #f1f3f6;
-            border-radius: 6px;
-        }
-
-        .progress-container {
-            width: 100%;
-            background: #ddd;
-            border-radius: 6px;
-            overflow: hidden;
-            margin-top: 5px;
-            position: relative;
-            height: 12px;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: #28a745;
-            width: 0%;
-            transition: width 0.5s ease-in-out;
-        }
-
-        .tooltip {
-            position: absolute;
-            top: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: black;
-            color: white;
-            padding: 3px 6px;
-            font-size: 12px;
-            border-radius: 4px;
-            display: none;
-        }
-
-        .progress-container:hover .tooltip {
-            display: block;
-        }
-
-        #loading {
-            text-align: center;
-            font-size: 16px;
-            color: #007bff;
-        }
-
-        .hidden {
-            display: none;
-        }
-    </style>
-
-    <script>
-        function fetchProjects() {
-            document.getElementById('loading').classList.remove('hidden');
-
-            fetch('/api/projects')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('loading').classList.add('hidden');
-                    const projectList = document.getElementById('project-list');
-                    projectList.innerHTML = "";
-
-                    data.forEach(project => {
-                        const listItem = document.createElement('li');
-                        listItem.textContent = `📌 ${project.project_id}: ${project.description}`;
-                        projectList.appendChild(listItem);
-                    });
-                })
-                .catch(error => {
-                    document.getElementById('loading').classList.add('hidden');
-                    console.error("Error loading projects:", error);
-                    alert("⚠️ Failed to load projects.");
+                data.forEach(employee => {
+                    let option = document.createElement('option');
+                    option.value = employee.id;
+                    option.textContent = `${employee.name} (ID: ${employee.id})`;
+                    employeeDropdown.appendChild(option);
                 });
-        }
+            })
+            .catch(error => {
+                console.error("Error loading employees:", error);
+                alert("⚠️ Failed to load employees.");
+            });
+    }
 
-        function fetchProjectDetails() {
-            const projectId = document.getElementById('project_id').value.trim();
-            if (!projectId) {
-                alert("⚠️ Please enter a project ID!");
-                return;
-            }
+    // ✅ Fetch Logs for Selected Employee
+    function fetchLogsForEmployee() {
+        const employeeId = document.getElementById('employee-dropdown').value;
+        if (!employeeId) return;
 
-            document.getElementById('loading').classList.remove('hidden');
+        fetch(`/api/logs/${employeeId}`)
+            .then(response => response.json())
+            .then(data => {
+                const logList = document.getElementById('log-list');
+                logList.innerHTML = "";
 
-            fetch(`/api/project_details/${projectId}`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('loading').classList.add('hidden');
-
-                    // Employees Section
-                    const employeeList = document.getElementById('employee-list');
-                    employeeList.innerHTML = "";
-                    data.employees.forEach(emp => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `<strong>${emp.name}</strong> <br> <small>Skills: ${emp.skills.join(', ')}</small>`;
-                        employeeList.appendChild(li);
-                    });
-
-                    // Tasks and Subtasks Section
-                    const taskList = document.getElementById('task-list');
-                    taskList.innerHTML = "";
-
-                    data.tasks.forEach(task => {
-                        const taskDiv = document.createElement('div');
-                        taskDiv.className = "task-container";
-                        taskDiv.innerHTML = `<h3>${task.name}</h3>`;
-
-                        task.subtasks.forEach(subtask => {
-                            const subtaskDiv = document.createElement('div');
-                            subtaskDiv.className = "subtask-container";
-                            subtaskDiv.innerHTML = `
-                                <p><strong>${subtask.name}</strong> <br>
-                                Assigned To: ${subtask.employee ? `${subtask.employee.name} (ID: ${subtask.employee.id})` : "Not Assigned"}</p>
-                            `;
-
-                            let progressContainer = document.createElement("div");
-                            progressContainer.className = "progress-container";
-
-                            let progressBar = document.createElement("div");
-                            progressBar.className = "progress-bar";
-
-                            let completedMilestones = subtask.milestones.filter(m => m.status === 1).length;
-                            let progress = (completedMilestones / 5) * 100;
-                            progressBar.style.width = `${progress}%`;
-
-                            let tooltip = document.createElement("div");
-                            tooltip.className = "tooltip";
-                            tooltip.textContent = `${progress}%`;
-                            progressBar.appendChild(tooltip);
-
-                            progressContainer.appendChild(progressBar);
-                            subtaskDiv.appendChild(progressContainer);
-
-                            taskDiv.appendChild(subtaskDiv);
-                        });
-
-                        taskList.appendChild(taskDiv);
-                    });
-                })
-                .catch(error => {
-                    document.getElementById('loading').classList.add('hidden');
-                    console.error("Error fetching project details:", error);
-                    alert("⚠️ An error occurred while fetching details.");
+                data.forEach(log => {
+                    let logItem = document.createElement('li');
+                    logItem.textContent = `${log.timestamp}: ${log.message}`;
+                    logList.appendChild(logItem);
                 });
+            })
+            .catch(error => {
+                console.error("Error fetching logs:", error);
+                alert("⚠️ Failed to load logs.");
+            });
+    }
+
+    // ✅ Fetch Projects
+    function fetchProjects() {
+        document.getElementById('loading').classList.remove('hidden');
+        fetch('/api/projects')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').classList.add('hidden');
+                const projectList = document.getElementById('project-list');
+                projectList.innerHTML = "";
+
+                data.forEach(project => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `📌 ${project.project_id}: ${project.description}`;
+                    projectList.appendChild(listItem);
+                });
+            })
+            .catch(error => {
+                document.getElementById('loading').classList.add('hidden');
+                console.error("Error loading projects:", error);
+                alert("⚠️ Failed to load projects.");
+            });
+    }
+
+    // ✅ Fetch Project Details
+    function fetchProjectDetails() {
+        const projectId = document.getElementById('project_id').value.trim();
+        if (!projectId) {
+            alert("⚠️ Please enter a project ID!");
+            return;
         }
-    </script>
+
+        document.getElementById('loading').classList.remove('hidden');
+        fetch(`/api/project_details/${projectId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').classList.add('hidden');
+
+                // Employees Section
+                const employeeList = document.getElementById('employee-list');
+                employeeList.innerHTML = "";
+                data.employees.forEach(emp => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>${emp.name}</strong> <br> <small>Skills: ${emp.skills.join(', ')}</small>`;
+                    employeeList.appendChild(li);
+                });
+
+                // Tasks Section
+                const taskList = document.getElementById('task-list');
+                taskList.innerHTML = "";
+
+                data.tasks.forEach(task => {
+                    const taskDiv = document.createElement('div');
+                    taskDiv.className = "task-container";
+                    taskDiv.innerHTML = `<h3>${task.name}</h3>`;
+
+                    task.subtasks.forEach(subtask => {
+                        const subtaskDiv = document.createElement('div');
+                        subtaskDiv.className = "subtask-container";
+                        subtaskDiv.innerHTML = `
+                            <p><strong>${subtask.name}</strong> <br>
+                            Assigned To: ${subtask.employee ? `${subtask.employee.name} (ID: ${subtask.employee.id})` : "Not Assigned"}</p>
+                        `;
+
+                        taskDiv.appendChild(subtaskDiv);
+                    });
+
+                    taskList.appendChild(taskDiv);
+                });
+            })
+            .catch(error => {
+                document.getElementById('loading').classList.add('hidden');
+                console.error("Error fetching project details:", error);
+                alert("⚠️ An error occurred while fetching details.");
+            });
+    }
+
+    // ✅ Add New Project
+    function addNewProject() {
+        const projectId = document.getElementById('new_project_id').value.trim();
+        const projectDescription = document.getElementById('new_project_description').value.trim();
+
+        if (!projectId || !projectDescription) {
+            alert("⚠️ Please fill in both fields.");
+            return;
+        }
+
+        fetch('/api/projects', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ project_id: projectId, description: projectDescription })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            fetchProjects(); // ✅ Refresh project list **only after success**
+        })
+        .catch(error => {
+            console.error("Error adding project:", error);
+            alert("⚠️ Failed to add project.");
+        });
+    }
+
+    // ✅ Load Employees for Logs on Page Load
+    document.addEventListener('DOMContentLoaded', fetchEmployeesForLogs);
+</script>
+
+<style>
+    .success-btn {
+        background-color: #17a2b8;
+    }
+
+    .success-btn:hover {
+        background-color: #138496;
+    }
+</style>
+
 {% endblock %}
